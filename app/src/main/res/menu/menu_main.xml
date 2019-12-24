@@ -1,0 +1,13 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.example.translator.ui.MainActivity">
+    <item
+        android:id="@+id/translatorFragment"
+        android:icon="@drawable/ic_translate_black_24dp"
+        android:title="Translate" />
+    <item
+        android:id="@+id/storedTranslationsFragment"
+        android:icon="@drawable/ic_dictionary_24dp"
+        android:title="Stored Translations" />
+</menu>

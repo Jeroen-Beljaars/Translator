@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/navigation_graph"
+    app:startDestination="@id/translatorFragment">
+
+    <fragment
+        android:id="@+id/translatorFragment"
+        android:name="com.example.translator.ui.translator.TranslatorFragment"
+        android:label="Translator"
+        tools:layout="@layout/fragment_translator">
+        <action
+            android:id="@+id/action_translatorFragment_to_storedTranslationsFragment2"
+            app:destination="@id/storedTranslationsFragment" />
+        <action
+            android:id="@+id/action_translatorFragment_to_languageSelectActivity"
+            app:destination="@id/languageSelectActivity" />
+    </fragment>
+    <fragment
+        android:id="@+id/storedTranslationsFragment"
+        android:name="com.example.translator.StoredTranslationsFragment"
+        android:label="Stored Translations"
+        tools:layout="@layout/fragment_stored_translations"/>
+    <fragment
+        android:id="@+id/languageSelectActivity"
+        android:name="com.example.translator.ui.languageSelect.LanguageSelectFragment"
+        android:label="Select Language"
+        tools:layout="@layout/fragment_language_select" >
+        <argument
+            android:name="currentSelectedLanguage"
+            app:argType="com.example.translator.model.Language" />
+        <action
+            android:id="@+id/action_languageSelectActivity_to_translatorFragment"
+            app:destination="@id/translatorFragment" />
+        <argument
+            android:name="changingFromLanguage"
+            app:argType="boolean" />
+    </fragment>
+</navigation>
