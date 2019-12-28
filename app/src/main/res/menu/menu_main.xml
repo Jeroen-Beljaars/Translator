@@ -7,7 +7,7 @@
         android:icon="@drawable/ic_translate_black_24dp"
         android:title="Translate" />
     <item
-        android:id="@+id/storedTranslationsFragment"
+        android:id="@+id/favoriteTranslationsFragment"
         android:icon="@drawable/ic_dictionary_24dp"
-        android:title="Stored Translations" />
+        android:title="Favorite Translations" />
 </menu>

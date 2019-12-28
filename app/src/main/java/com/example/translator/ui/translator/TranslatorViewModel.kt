@@ -75,6 +75,9 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         this.textToTranslate.apply {
             value = translation.originalText
         }
+        this.translatedText.apply {
+            value = TranslateResponse(translation.translatedText, null)
+        }
     }
 
     fun getSelectedLanguages(fromLanguageId: Int? = null, toLanguageId: Int? = null) {

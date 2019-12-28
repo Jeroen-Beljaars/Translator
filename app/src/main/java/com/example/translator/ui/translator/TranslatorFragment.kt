@@ -80,19 +80,28 @@ class TranslatorFragment : Fragment() {
 
     }
 
+    fun saveTranslation(){
+        this.toggleTextWatcher(true)
+        this@TranslatorFragment.viewModel.createOrUpdateTranslation()
+        etTextToTranslate.hint = etTextToTranslate.text
+        etTextToTranslate.text.clear()
+        this.toggleTextWatcher()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         this.translationAdapter = TranslationAdapter(
             translationHistory,
             { translation ->
+                scrollView.smoothScrollTo(0, 0)
                 viewModel.selectTranslation(translation)
             },
             { translation -> viewModel.favoriteTranslation(translation) }
         )
 
         btnSaveChanges.setOnClickListener {
-            viewModel.createOrUpdateTranslation()
+            this.saveTranslation()
         }
 
         rvTranslationHistory.layoutManager = LinearLayoutManager(activity as AppCompatActivity, RecyclerView.VERTICAL, false)
@@ -120,11 +129,7 @@ class TranslatorFragment : Fragment() {
 
         etTextToTranslate.setOnEditorActionListener { _, action, _ ->
             if (action == EditorInfo.IME_ACTION_DONE) {
-                this.toggleTextWatcher(true)
-                this@TranslatorFragment.viewModel.createOrUpdateTranslation()
-                etTextToTranslate.hint = etTextToTranslate.text
-                etTextToTranslate.text.clear()
-                this.toggleTextWatcher()
+                saveTranslation()
             }
             false
         }

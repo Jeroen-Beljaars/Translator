@@ -23,6 +23,10 @@ class TranslationRepository(context: Context) {
         return translationDao.getTranslationHistory()
     }
 
+    fun getFavoriteTranslations(): LiveData<List<Translation>> {
+        return translationDao.getFavoriteTranslations()
+    }
+
     fun insertTranslation(translation: Translation) : Deferred<Unit> {
         return CoroutineScope(Dispatchers.IO).async {
             translationDao.insertTranslation(translation)
