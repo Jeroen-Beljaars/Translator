@@ -1,30 +1,38 @@
 package com.example.translator.ui.translator
 
 import android.app.Application
-import android.widget.Toast
 import androidx.lifecycle.*
 import com.example.translator.api.TranslateApi
-import com.example.translator.database.LanguageRepository
+import com.example.translator.database.language.LanguageRepository
+import com.example.translator.database.translation.TranslationRepository
 import com.example.translator.model.Language
 import com.example.translator.model.TranslateResponse
+import com.example.translator.model.Translation
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
-import com.google.firebase.ml.naturallanguage.translate.FirebaseTranslateLanguage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import java.util.*
 
 class TranslatorViewModel(application: Application) : AndroidViewModel(application) {
 
     private val context = application.applicationContext
     private val translateApi = TranslateApi
-    private val languageRepository = LanguageRepository(this.context)
 
-    val fromLanguage = MutableLiveData<Language>()
-    val toLanguage = MutableLiveData<Language>()
+    private val languageRepository =
+        LanguageRepository(this.context)
+
+    private val translationRepository =
+        TranslationRepository(this.context)
+
+    val fromLanguage = MediatorLiveData<Language>()
+    val toLanguage = MediatorLiveData<Language>()
     val textToTranslate = MutableLiveData<String>()
     val translatedText = MediatorLiveData<TranslateResponse>()
 
-    val storedFromLanguage = this.getSelectedFromLanguage()
-    val storedToLanguage = this.getSelectedToLanguage()
+    val translationHistory = MediatorLiveData<List<Translation>>()
 
     private val processTranslation =
         OnCompleteListener<String> { task ->
@@ -36,6 +44,20 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         }
 
     init {
+        this.getTranslationHistory()
+
+        fromLanguage.addSource(this.getSelectedFromLanguage()) { fromLanguage ->
+            this@TranslatorViewModel.fromLanguage.apply {
+                value = fromLanguage
+            }
+        }
+
+        toLanguage.addSource(this.getSelectedToLanguage()) { toLanguage ->
+            this.toLanguage.apply {
+                value = toLanguage
+            }
+        }
+
         // Automatically translate the text after the user enters some text
         translatedText.addSource(textToTranslate) {translate().addOnCompleteListener(processTranslation)}
         translatedText.addSource(fromLanguage) {
@@ -56,14 +78,68 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     private fun translate(): Task<String> {
         if (this.fromLanguage.value != null && this.toLanguage.value != null && this.textToTranslate.value != null){
             return this.translateApi.translate(
-                this.fromLanguage.value!!.id,
-                this.toLanguage.value!!.id,
+                this.fromLanguage.value!!.languageId,
+                this.toLanguage.value!!.languageId,
                 this.textToTranslate.value!!
             )
         } else {
             return Tasks.forResult("")
         }
+    }
 
+    fun syncTranslationHistory(event: LiveData<Long>) {
+        this.translationHistory.addSource(event) {
+            getTranslationHistory()
+            this.translationHistory.removeSource(event)
+        }
+    }
+
+    fun storeTranslation(translation: Translation? = null) {
+        var translationToAdd = translation
+        if (translation == null && this.fromLanguage.value != null && this.toLanguage.value != null &&
+            this.textToTranslate.value != null &&
+            this.translatedText.value?.error == null &&
+            this.translatedText.value?.result != ""){
+            translationToAdd = Translation(
+                this@TranslatorViewModel.fromLanguage.value!!.languageId,
+                this@TranslatorViewModel.toLanguage.value!!.languageId,
+                this@TranslatorViewModel.textToTranslate.value!!,
+                this@TranslatorViewModel.translatedText.value!!.result!!
+            )
+        }
+        if(translationToAdd != null) {
+            CoroutineScope(Dispatchers.Main).async {
+                this@TranslatorViewModel.translationRepository.insertTranslation(
+                   translationToAdd
+                ).await()
+                this@TranslatorViewModel.getTranslationHistory()
+            }
+        }
+    }
+
+    private fun getTranslationHistory() {
+        val translations = this.translationRepository.getTranslations()
+        translationHistory.addSource(translations) { translationHistory ->
+            this.translationHistory.apply {
+                value = translationHistory
+            }
+            this.translationHistory.removeSource(translations)
+        }
+    }
+
+    fun deleteTranslation(translation: Translation) {
+        CoroutineScope(Dispatchers.Main).async {
+            this@TranslatorViewModel.translationRepository.deleteTranslation(translation).await()
+            this@TranslatorViewModel.getTranslationHistory()
+        }
+    }
+
+    fun favoriteTranslation(translation: Translation){
+        CoroutineScope(Dispatchers.Main).async {
+            translation.isFavorite = !translation.isFavorite
+            translationRepository.updateTranslation(translation).await()
+            this@TranslatorViewModel.getTranslationHistory()
+        }
     }
 
     /**

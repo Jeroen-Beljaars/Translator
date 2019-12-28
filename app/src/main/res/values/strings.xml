@@ -6,4 +6,9 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="unexpected_error">An unexpected error has occurred</string>
     <string name="press_to_enter">Press to enter text</string>
+    <string name="added_to_favorite">Translation has been added to your favorites</string>
+    <string name="removed_from_favorites">Translation has been removed from your favorites</string>
+    <string name="removed_from_history">Translation has been removed from your history</string>
+    <string name="undo">UNDO</string>
+    <string name="save">SAVE CHANGES</string>
 </resources>

@@ -19,7 +19,7 @@ object TranslateApi {
 
     private val context = App.context
 
-    public fun translate(fromLanguage: Int, toLanguage: Int, textToTranslate: String): Task<String> {
+    fun translate(fromLanguage: Int, toLanguage: Int, textToTranslate: String): Task<String> {
         val options = FirebaseTranslatorOptions.Builder()
             .setSourceLanguage(fromLanguage)
             .setTargetLanguage(toLanguage)

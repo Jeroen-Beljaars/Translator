@@ -1,37 +1,40 @@
 package com.example.translator.database
 
 import android.content.Context
-import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.translator.database.language.LanguageDao
+import com.example.translator.database.translation.TranslationDao
 import com.example.translator.model.Language
 import com.example.translator.model.Language.Companion.getSupportedLanguages
+import com.example.translator.model.Translation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.*
 
-@Database(entities = [Language::class], version = 1, exportSchema = false)
-abstract class LanguageRoomDatabase : RoomDatabase() {
+@TypeConverters(Converters::class)
+@Database(entities = [Language::class, Translation::class], version = 1, exportSchema = false)
+abstract class TranslatorRoomDatabase : RoomDatabase() {
 
     abstract fun languageDao(): LanguageDao
+    abstract fun translationDao(): TranslationDao
 
     companion object {
-        private const val DATABASE_NAME = "LANGUAGE_DATABASE"
+        private const val DATABASE_NAME = "TRANSLATOR_DATABASE"
 
         @Volatile
-        private var INSTANCE: LanguageRoomDatabase? = null
+        private var INSTANCE: TranslatorRoomDatabase? = null
 
-        fun getDatabase(context: Context): LanguageRoomDatabase? {
+        fun getDatabase(context: Context): TranslatorRoomDatabase? {
             if (INSTANCE == null) {
-                synchronized(LanguageRoomDatabase::class.java) {
+                synchronized(TranslatorRoomDatabase::class.java) {
                     if (INSTANCE == null) {
                         INSTANCE = Room.databaseBuilder(
                             context.applicationContext,
-                            LanguageRoomDatabase::class.java, DATABASE_NAME
+                            TranslatorRoomDatabase::class.java, DATABASE_NAME
                         )
                             .fallbackToDestructiveMigration()
                             .addCallback(object : RoomDatabase.Callback() {

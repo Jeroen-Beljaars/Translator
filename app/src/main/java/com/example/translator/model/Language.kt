@@ -11,8 +11,8 @@ import kotlinx.android.parcel.Parcelize
 @Entity(tableName = "languageTable")
 data class Language(
     @PrimaryKey
-    @ColumnInfo(name = "id")
-    val id: Int,
+    @ColumnInfo(name = "languageId")
+    val languageId: Int,
 
     @ColumnInfo(name = "name")
     val name: String,

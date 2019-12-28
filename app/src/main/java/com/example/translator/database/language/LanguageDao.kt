@@ -1,4 +1,4 @@
-package com.example.translator.database
+package com.example.translator.database.language
 
 import androidx.lifecycle.LiveData
 import androidx.room.Dao

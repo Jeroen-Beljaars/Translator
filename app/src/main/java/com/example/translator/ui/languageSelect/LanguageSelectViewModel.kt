@@ -2,14 +2,12 @@ package com.example.translator.ui.languageSelect
 
 import android.app.Application
 import androidx.lifecycle.*
-import com.example.translator.api.TranslateApi
-import com.example.translator.database.LanguageRepository
+import com.example.translator.database.language.LanguageRepository
 import com.example.translator.model.Language
-import com.google.firebase.ml.naturallanguage.translate.FirebaseTranslateLanguage
-import kotlinx.android.synthetic.main.fragment_language_select.*
 
 class LanguageSelectViewModel(application: Application) : AndroidViewModel(application) {
-    private val languageRepository = LanguageRepository(application.applicationContext)
+    private val languageRepository =
+        LanguageRepository(application.applicationContext)
 
     val languages: LiveData<List<Language>> = languageRepository.getLanguages()
     val filteredLanguages: MutableLiveData<ArrayList<Language>> = MutableLiveData()

@@ -1,21 +1,22 @@
-package com.example.translator.database
+package com.example.translator.database.language
 
 import android.content.Context
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+import com.example.translator.database.TranslatorRoomDatabase
 import com.example.translator.model.Language
-import com.google.firebase.ml.naturallanguage.translate.FirebaseTranslateLanguage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class LanguageRepository(context: Context) {
 
     private val languageDao: LanguageDao
 
     init {
-        val database = LanguageRoomDatabase.getDatabase(context)
+        val database =
+            TranslatorRoomDatabase.getDatabase(
+                context
+            )
         languageDao = database!!.languageDao()
     }
 

@@ -44,8 +44,6 @@ class LanguageSelectFragment : Fragment() {
 
         rvLanguages.layoutManager = LinearLayoutManager(activity as AppCompatActivity, RecyclerView.VERTICAL, false)
         rvLanguages.adapter = languageAdapter
-
-//        createItemTouchHelper().attachToRecyclerView(rvGames)
     }
 
     fun onLanguageClick(language: Language) {
