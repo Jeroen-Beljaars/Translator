@@ -69,12 +69,13 @@ class TranslatorFragment : Fragment() {
 
         if (translation!= null) {
             a.supportActionBar?.setTitle(R.string.edit_translation)
-
             toggleTextWatcher(true)
             etTextToTranslate.setText(translation.originalText)
             toggleTextWatcher(false)
+            btnSaveChanges.visibility = View.VISIBLE
         } else {
             a.supportActionBar?.setTitle(R.string.app_name)
+            btnSaveChanges.visibility = View.GONE
         }
 
     }
@@ -89,6 +90,10 @@ class TranslatorFragment : Fragment() {
             },
             { translation -> viewModel.favoriteTranslation(translation) }
         )
+
+        btnSaveChanges.setOnClickListener {
+            viewModel.createOrUpdateTranslation()
+        }
 
         rvTranslationHistory.layoutManager = LinearLayoutManager(activity as AppCompatActivity, RecyclerView.VERTICAL, false)
         rvTranslationHistory.adapter = translationAdapter

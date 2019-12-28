@@ -8,7 +8,7 @@
     android:background="@android:color/white"
     android:elevation="2dp"
     android:padding="5dp"
-    tools:context=".StoredTranslationsFragment">
+    tools:context=".ui.favoriteTranslations.FavoriteTranslationsFragment">
 
     <ImageView
         android:id="@+id/ivFavorite"

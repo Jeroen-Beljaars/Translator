@@ -19,7 +19,7 @@
     </fragment>
     <fragment
         android:id="@+id/storedTranslationsFragment"
-        android:name="com.example.translator.StoredTranslationsFragment"
+        android:name="com.example.translator.ui.favoriteTranslations.FavoriteTranslationsFragment"
         android:label="Stored Translations"
         tools:layout="@layout/fragment_stored_translations"/>
     <fragment
