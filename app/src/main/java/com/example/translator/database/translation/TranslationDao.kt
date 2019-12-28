@@ -14,7 +14,7 @@ interface TranslationDao {
     @Update
     suspend fun updateTranslation(translation: Translation)
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTranslation(translation: Translation)
 
     @Delete

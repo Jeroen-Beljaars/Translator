@@ -32,7 +32,26 @@ class TranslatorFragment : Fragment() {
 
     private var translationHistory = arrayListOf<Translation>()
     private lateinit var translationAdapter: TranslationAdapter
+    private var textWatcher = object : TextWatcher {
+        override fun afterTextChanged(s: Editable?) {
+        }
 
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+        }
+
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            val textToTranslate = s.toString()
+            if (textToTranslate == "") {
+                etTextToTranslate.hint = getString(R.string.press_to_enter)
+                viewModel.selectedTranslation.apply {
+                    value = null
+                }
+            }
+            viewModel.textToTranslate.apply {
+                value = textToTranslate
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -45,10 +64,31 @@ class TranslatorFragment : Fragment() {
 
     }
 
+    private fun toggleEditMode(translation: Translation?){
+        val a = activity as AppCompatActivity
+
+        if (translation!= null) {
+            a.supportActionBar?.setTitle(R.string.edit_translation)
+
+            toggleTextWatcher(true)
+            etTextToTranslate.setText(translation.originalText)
+            toggleTextWatcher(false)
+        } else {
+            a.supportActionBar?.setTitle(R.string.app_name)
+        }
+
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        this.translationAdapter = TranslationAdapter(translationHistory, { language -> {}}, { translation -> viewModel.favoriteTranslation(translation) })
+        this.translationAdapter = TranslationAdapter(
+            translationHistory,
+            { translation ->
+                viewModel.selectTranslation(translation)
+            },
+            { translation -> viewModel.favoriteTranslation(translation) }
+        )
 
         rvTranslationHistory.layoutManager = LinearLayoutManager(activity as AppCompatActivity, RecyclerView.VERTICAL, false)
         rvTranslationHistory.adapter = translationAdapter
@@ -71,23 +111,15 @@ class TranslatorFragment : Fragment() {
         etTextToTranslate.imeOptions = EditorInfo.IME_ACTION_DONE
         etTextToTranslate.setRawInputType(InputType.TYPE_CLASS_TEXT)
 
-        etTextToTranslate.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-            }
-
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-            }
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                viewModel.textToTranslate.apply {
-                    value = s.toString()
-                }
-            }
-        })
+        this.toggleTextWatcher()
 
         etTextToTranslate.setOnEditorActionListener { _, action, _ ->
             if (action == EditorInfo.IME_ACTION_DONE) {
-                this@TranslatorFragment.viewModel.storeTranslation()
+                this.toggleTextWatcher(true)
+                this@TranslatorFragment.viewModel.createOrUpdateTranslation()
+                etTextToTranslate.hint = etTextToTranslate.text
+                etTextToTranslate.text.clear()
+                this.toggleTextWatcher()
             }
             false
         }
@@ -152,6 +184,10 @@ class TranslatorFragment : Fragment() {
             }
         })
 
+        viewModel.selectedTranslation.observe(this, Observer { selectedTranslation ->
+            toggleEditMode(selectedTranslation)
+        })
+
 
     }
 
@@ -159,6 +195,14 @@ class TranslatorFragment : Fragment() {
         val visibility = if (visible) View.VISIBLE else View.GONE
         translationTopBar.visibility = visibility
         tvTranslatedText.visibility = visibility
+    }
+
+    fun toggleTextWatcher(remove: Boolean = false) {
+        if (remove){
+            etTextToTranslate.removeTextChangedListener(this.textWatcher)
+        } else {
+            etTextToTranslate.addTextChangedListener(this.textWatcher)
+        }
     }
 
     /**
@@ -196,7 +240,7 @@ class TranslatorFragment : Fragment() {
                     )
 
                     mySnackbar.setAction(R.string.undo) {
-                        viewModel.storeTranslation(translationToDelete)
+                        viewModel.createOrUpdateTranslation(translationToDelete)
                     }
 
                     mySnackbar.show()

@@ -14,7 +14,6 @@ import com.google.android.gms.tasks.Tasks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import java.util.*
 
 class TranslatorViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -34,6 +33,8 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
 
     val translationHistory = MediatorLiveData<List<Translation>>()
 
+    val selectedTranslation = MediatorLiveData<Translation>()
+
     private val processTranslation =
         OnCompleteListener<String> { task ->
             if (task.isSuccessful) {
@@ -46,29 +47,59 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     init {
         this.getTranslationHistory()
 
-        fromLanguage.addSource(this.getSelectedFromLanguage()) { fromLanguage ->
-            this@TranslatorViewModel.fromLanguage.apply {
-                value = fromLanguage
-            }
-        }
-
-        toLanguage.addSource(this.getSelectedToLanguage()) { toLanguage ->
-            this.toLanguage.apply {
-                value = toLanguage
-            }
-        }
+        this.getSelectedLanguages()
 
         // Automatically translate the text after the user enters some text
-        translatedText.addSource(textToTranslate) {translate().addOnCompleteListener(processTranslation)}
+        translatedText.addSource(textToTranslate) {
+            translate().addOnCompleteListener(
+                processTranslation
+            )
+        }
         translatedText.addSource(fromLanguage) {
-            if(this.textToTranslate.value != "") {
+            if (this.textToTranslate.value != "") {
                 translate().addOnCompleteListener(processTranslation)
             }
         }
         translatedText.addSource(toLanguage) {
-            if(this.textToTranslate.value != "") {
+            if (this.textToTranslate.value != "") {
                 translate().addOnCompleteListener(processTranslation)
             }
+        }
+    }
+
+    fun selectTranslation(translation: Translation) {
+        this.selectedTranslation.apply {
+            value = translation
+        }
+        this.getSelectedLanguages(translation.fromLanguageId, translation.toLanguageId)
+        this.textToTranslate.apply {
+            value = translation.originalText
+        }
+    }
+
+    fun getSelectedLanguages(fromLanguageId: Int? = null, toLanguageId: Int? = null) {
+        val selectedFromLanguage =
+            if (fromLanguageId == null) this.getSelectedFromLanguage() else this.languageRepository.getLanguageById(
+                fromLanguageId
+            )
+
+        val selectedToLanguage =
+            if (toLanguageId == null) this.getSelectedToLanguage() else this.languageRepository.getLanguageById(
+                toLanguageId
+            )
+
+        fromLanguage.addSource(selectedFromLanguage) { fromLanguage ->
+            this@TranslatorViewModel.fromLanguage.apply {
+                value = fromLanguage
+            }
+            this@TranslatorViewModel.fromLanguage.removeSource(selectedFromLanguage)
+        }
+
+        toLanguage.addSource(selectedToLanguage) { toLanguage ->
+            this.toLanguage.apply {
+                value = toLanguage
+            }
+            this@TranslatorViewModel.toLanguage.removeSource(selectedToLanguage)
         }
     }
 
@@ -76,7 +107,7 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
      * Translate the text to the destination language
      */
     private fun translate(): Task<String> {
-        if (this.fromLanguage.value != null && this.toLanguage.value != null && this.textToTranslate.value != null){
+        if (this.fromLanguage.value != null && this.toLanguage.value != null && this.textToTranslate.value != null) {
             return this.translateApi.translate(
                 this.fromLanguage.value!!.languageId,
                 this.toLanguage.value!!.languageId,
@@ -87,30 +118,33 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun syncTranslationHistory(event: LiveData<Long>) {
-        this.translationHistory.addSource(event) {
-            getTranslationHistory()
-            this.translationHistory.removeSource(event)
+    fun createOrUpdateTranslation(translation: Translation? = null) {
+        var translationToAddOrUpdate = translation
+        if (this.selectedTranslation.value != null && translationToAddOrUpdate == null) {
+            translationToAddOrUpdate = this.selectedTranslation.value!!
+            translationToAddOrUpdate.fromLanguageId = this.fromLanguage.value!!.languageId
+            translationToAddOrUpdate.toLanguageId = this.toLanguage.value!!.languageId
+            translationToAddOrUpdate.originalText = this.textToTranslate.value!!
+            translationToAddOrUpdate.translatedText = this.translatedText.value!!.result!!
+            this.selectedTranslation.value = null
         }
-    }
 
-    fun storeTranslation(translation: Translation? = null) {
-        var translationToAdd = translation
-        if (translation == null && this.fromLanguage.value != null && this.toLanguage.value != null &&
+        else if (translationToAddOrUpdate == null && this.fromLanguage.value != null && this.toLanguage.value != null &&
             this.textToTranslate.value != null &&
             this.translatedText.value?.error == null &&
-            this.translatedText.value?.result != ""){
-            translationToAdd = Translation(
-                this@TranslatorViewModel.fromLanguage.value!!.languageId,
-                this@TranslatorViewModel.toLanguage.value!!.languageId,
-                this@TranslatorViewModel.textToTranslate.value!!,
-                this@TranslatorViewModel.translatedText.value!!.result!!
+            this.translatedText.value?.result != ""
+        ) {
+            translationToAddOrUpdate = Translation(
+                this.fromLanguage.value!!.languageId,
+                this.toLanguage.value!!.languageId,
+                this.textToTranslate.value!!,
+                this.translatedText.value!!.result!!
             )
         }
-        if(translationToAdd != null) {
+        if (translationToAddOrUpdate != null) {
             CoroutineScope(Dispatchers.Main).async {
                 this@TranslatorViewModel.translationRepository.insertTranslation(
-                   translationToAdd
+                    translationToAddOrUpdate
                 ).await()
                 this@TranslatorViewModel.getTranslationHistory()
             }
@@ -134,7 +168,7 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun favoriteTranslation(translation: Translation){
+    fun favoriteTranslation(translation: Translation) {
         CoroutineScope(Dispatchers.Main).async {
             translation.isFavorite = !translation.isFavorite
             translationRepository.updateTranslation(translation).await()

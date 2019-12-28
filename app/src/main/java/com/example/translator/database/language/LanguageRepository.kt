@@ -24,6 +24,10 @@ class LanguageRepository(context: Context) {
         return languageDao.getLanguages()
     }
 
+    fun getLanguageById(languageId: Int): LiveData<Language> {
+        return languageDao.getLanguageById(languageId)
+    }
+
     fun updateLanguage(language: Language) {
         CoroutineScope(Dispatchers.IO).launch {
             languageDao.updateLanguage(language)

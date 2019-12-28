@@ -11,4 +11,5 @@
     <string name="removed_from_history">Translation has been removed from your history</string>
     <string name="undo">UNDO</string>
     <string name="save">SAVE CHANGES</string>
+    <string name="edit_translation">Edit translation</string>
 </resources>

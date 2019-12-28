@@ -13,6 +13,9 @@ interface LanguageDao {
     @Query("SELECT * FROM languageTable ORDER BY name")
     fun getLanguages(): LiveData<List<Language>>
 
+    @Query("SELECT * FROM languageTable WHERE languageId = :languageId")
+    fun getLanguageById(languageId: Int): LiveData<Language>
+
     @Query("SELECT * FROM languageTable WHERE selectedAsFromLanguage = 1")
     fun getSelectedFromLanguage(): LiveData<Language>
 
