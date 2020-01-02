@@ -26,6 +26,8 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     private val translationRepository =
         TranslationRepository(this.context)
 
+    var liveTranslation = false
+
     val fromLanguage = MediatorLiveData<Language>()
     val toLanguage = MediatorLiveData<Language>()
     val textToTranslate = MutableLiveData<String>()
@@ -35,8 +37,13 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
 
     val selectedTranslation = MediatorLiveData<Translation>()
 
+    val loading = MutableLiveData<Boolean>()
+
     private val processTranslation =
         OnCompleteListener<String> { task ->
+            this.loading.apply {
+                value = false
+            }
             if (task.isSuccessful) {
                 translatedText.value = TranslateResponse(task.result, null)
             } else {
@@ -49,61 +56,7 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
 
         this.getSelectedLanguages()
 
-        // Automatically translate the text after the user enters some text
-        translatedText.addSource(textToTranslate) {
-            translate().addOnCompleteListener(
-                processTranslation
-            )
-        }
-        translatedText.addSource(fromLanguage) {
-            if (this.textToTranslate.value != "") {
-                translate().addOnCompleteListener(processTranslation)
-            }
-        }
-        translatedText.addSource(toLanguage) {
-            if (this.textToTranslate.value != "") {
-                translate().addOnCompleteListener(processTranslation)
-            }
-        }
-    }
-
-    fun selectTranslation(translation: Translation) {
-        this.selectedTranslation.apply {
-            value = translation
-        }
-        this.getSelectedLanguages(translation.fromLanguageId, translation.toLanguageId)
-        this.textToTranslate.apply {
-            value = translation.originalText
-        }
-        this.translatedText.apply {
-            value = TranslateResponse(translation.translatedText, null)
-        }
-    }
-
-    fun getSelectedLanguages(fromLanguageId: Int? = null, toLanguageId: Int? = null) {
-        val selectedFromLanguage =
-            if (fromLanguageId == null) this.getSelectedFromLanguage() else this.languageRepository.getLanguageById(
-                fromLanguageId
-            )
-
-        val selectedToLanguage =
-            if (toLanguageId == null) this.getSelectedToLanguage() else this.languageRepository.getLanguageById(
-                toLanguageId
-            )
-
-        fromLanguage.addSource(selectedFromLanguage) { fromLanguage ->
-            this@TranslatorViewModel.fromLanguage.apply {
-                value = fromLanguage
-            }
-            this@TranslatorViewModel.fromLanguage.removeSource(selectedFromLanguage)
-        }
-
-        toLanguage.addSource(selectedToLanguage) { toLanguage ->
-            this.toLanguage.apply {
-                value = toLanguage
-            }
-            this@TranslatorViewModel.toLanguage.removeSource(selectedToLanguage)
-        }
+        this.toggleLiveTranslation(true)
     }
 
     /**
@@ -111,6 +64,9 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
      */
     private fun translate(): Task<String> {
         if (this.fromLanguage.value != null && this.toLanguage.value != null && this.textToTranslate.value != null) {
+            this.loading.apply {
+                value = true
+            }
             return this.translateApi.translate(
                 this.fromLanguage.value!!.languageId,
                 this.toLanguage.value!!.languageId,
@@ -121,6 +77,100 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    /**
+     * Select a translation that the user wants to edit
+     *
+     * @param translation The translation object which the user just selected
+     */
+    fun selectTranslation(translation: Translation) {
+        // Disable live translation so we can select the provided translation properly
+        this.toggleLiveTranslation(false)
+        this.getSelectedLanguages(translation.fromLanguageId, translation.toLanguageId)
+        this.selectedTranslation.apply {
+            value = translation
+        }
+        this.textToTranslate.apply {
+            value = translation.originalText
+        }
+        this.translatedText.apply {
+            value = TranslateResponse(translation.translatedText, null)
+        }
+    }
+
+    /**
+     * Select a fromLanguage and a toLanguage
+     * The params are nullable. If no ID has been provided we will get the last selected
+     * language from the db
+     *
+     * @param fromLanguageId    the id of the fromLanguage which we want to select
+     * @param toLanguageId      the id of the toLanguage which we want to select
+     *
+     */
+    fun getSelectedLanguages(fromLanguageId: Int? = null, toLanguageId: Int? = null) {
+        val selectedFromLanguage =
+            if (fromLanguageId == null) this.getSelectedFromLanguage() else this.languageRepository.getLanguageById(
+                fromLanguageId
+            )
+
+        fromLanguage.addSource(selectedFromLanguage) { fromLanguage ->
+            this@TranslatorViewModel.fromLanguage.apply {
+                value = fromLanguage
+            }
+            val selectedToLanguage =
+                if (toLanguageId == null) this.getSelectedToLanguage() else this.languageRepository.getLanguageById(
+                    toLanguageId
+                )
+            toLanguage.addSource(selectedToLanguage) { toLanguage ->
+                this@TranslatorViewModel.toLanguage.apply {
+                    value = toLanguage
+                }
+                this@TranslatorViewModel.toggleLiveTranslation(true)
+                this@TranslatorViewModel.toLanguage.removeSource(selectedToLanguage)
+            }
+            this@TranslatorViewModel.toLanguage.removeSource(selectedFromLanguage)
+
+        }
+    }
+
+    /**
+     * Disable or enable live translation
+     *
+     * @param enable should or shoudln't live translation be enabled
+     */
+    fun toggleLiveTranslation(enable: Boolean = true) {
+        // Automatically translate the text after the user enters some text
+        if (enable && !liveTranslation){
+            liveTranslation = true
+            translatedText.addSource(textToTranslate) {
+                translate().addOnCompleteListener(
+                    processTranslation
+                )
+            }
+            translatedText.addSource(fromLanguage) {
+                if (this.textToTranslate.value != "") {
+                    translate().addOnCompleteListener(processTranslation)
+                }
+            }
+            translatedText.addSource(toLanguage) {
+                if (this.textToTranslate.value != "") {
+                    translate().addOnCompleteListener(processTranslation)
+                }
+            }
+        } else if(!enable && liveTranslation) {
+            liveTranslation = false
+            translatedText.removeSource(textToTranslate)
+            translatedText.removeSource(fromLanguage)
+            translatedText.removeSource(toLanguage)
+        }
+
+    }
+
+    /**
+     * Try to create a new translation. If it already exists update the existing one
+     *
+     * @param translation The translation that should be created or updated
+     * if translation is null we will create a new one using the values set in the viewModel
+     */
     fun createOrUpdateTranslation(translation: Translation? = null) {
         var translationToAddOrUpdate = translation
         if (this.selectedTranslation.value != null && translationToAddOrUpdate == null) {
@@ -154,6 +204,9 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    /**
+     * Get the translation history
+     */
     private fun getTranslationHistory() {
         val translations = this.translationRepository.getTranslations()
         translationHistory.addSource(translations) { translationHistory ->
@@ -164,6 +217,9 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    /**
+     * Delete a translation
+     */
     fun deleteTranslation(translation: Translation) {
         CoroutineScope(Dispatchers.Main).async {
             this@TranslatorViewModel.translationRepository.deleteTranslation(translation).await()
@@ -171,6 +227,11 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    /**
+     * Favorite or unfavorite a translation
+     *
+     * @param translation The translation which want to favorite/unfavorite
+     */
     fun favoriteTranslation(translation: Translation) {
         CoroutineScope(Dispatchers.Main).async {
             translation.isFavorite = !translation.isFavorite

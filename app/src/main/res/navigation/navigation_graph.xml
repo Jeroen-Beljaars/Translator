@@ -24,7 +24,8 @@
         tools:layout="@layout/fragment_language_select" >
         <argument
             android:name="currentSelectedLanguage"
-            app:argType="com.example.translator.model.Language" />
+            app:argType="com.example.translator.model.Language"
+            app:nullable="true" />
         <action
             android:id="@+id/action_languageSelectActivity_to_translatorFragment"
             app:destination="@id/translatorFragment" />

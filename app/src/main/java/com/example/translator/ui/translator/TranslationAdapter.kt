@@ -17,7 +17,7 @@ class TranslationAdapter(
     RecyclerView.Adapter<TranslationAdapter.ViewHolder>() {
 
     /**
-     * Creates and returns a ViewHolder object, inflating a standard layout called simple_list_item_1.
+     * Creates and returns a ViewHolder object, inflating the item_translation layout
      */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         return ViewHolder(

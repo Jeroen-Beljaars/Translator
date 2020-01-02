@@ -97,6 +97,4 @@ class LanguageSelectFragment : Fragment() {
             })
         }
     }
-
-
 }

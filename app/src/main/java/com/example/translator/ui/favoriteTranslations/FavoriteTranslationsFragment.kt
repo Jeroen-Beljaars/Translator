@@ -64,16 +64,12 @@ class FavoriteTranslationsFragment : Fragment() {
         )
     }
 
-//    fun onLanguageClick(language: Language) {
-//        if (args.changingFromLanguage){
-//            translatorViewModel.selectFromLanguage(language)
-//        } else {
-//            translatorViewModel.selectToLanguage(language)
-//        }
-//        findNavController().navigate(R.id.action_languageSelectActivity_to_translatorFragment)
-//    }
-
-    fun onTranslationClick(translation: Translation) {
+    /**
+     * Select a translation to edit it
+     *
+     * @param translation The translation which we want to edit
+     */
+    private fun onTranslationClick(translation: Translation) {
         translatorViewModel.selectTranslation(translation)
         findNavController().navigate(R.id.action_favoriteTranslationsFragment_to_translatorFragment)
     }

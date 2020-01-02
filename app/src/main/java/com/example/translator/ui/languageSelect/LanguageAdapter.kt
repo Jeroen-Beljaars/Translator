@@ -12,7 +12,7 @@ import com.example.translator.R
 import com.example.translator.model.Language
 import kotlinx.android.synthetic.main.item_language.view.*
 
-class LanguageAdapter(private val languages: List<Language>, private val currentSelectedLanguage: Language, private val onClick: (Language) -> Unit) :
+class LanguageAdapter(private val languages: List<Language>, private val currentSelectedLanguage: Language?, private val onClick: (Language) -> Unit) :
     RecyclerView.Adapter<LanguageAdapter.ViewHolder>() {
 
     /**

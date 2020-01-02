@@ -2,16 +2,16 @@ package com.example.translator.ui.translator
 
 
 import android.os.Bundle
+import android.os.Handler
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
+import android.view.*
 import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.fragment.findNavController
@@ -21,17 +21,25 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.translator.R
 import com.example.translator.model.Translation
+import com.example.translator.ui.MainActivity
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_translator.*
+import java.util.*
+import kotlin.concurrent.schedule
 
 /**
- * A simple [Fragment] subclass.
+ * In this [Fragment] the user can see his Translation History
+ * and donew translations
  */
 class TranslatorFragment : Fragment() {
     private lateinit var viewModel: TranslatorViewModel
 
     private var translationHistory = arrayListOf<Translation>()
     private lateinit var translationAdapter: TranslationAdapter
+
+    // Setup the listener which we will use to keep track of what the user enters in the
+    // Text to translate box
     private var textWatcher = object : TextWatcher {
         override fun afterTextChanged(s: Editable?) {
         }
@@ -41,12 +49,13 @@ class TranslatorFragment : Fragment() {
 
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
             val textToTranslate = s.toString()
-            if (textToTranslate == "") {
-                etTextToTranslate.hint = getString(R.string.press_to_enter)
-                viewModel.selectedTranslation.apply {
-                    value = null
-                }
+
+            // If the user removes all the text from the textToTranslate box disable edit mode
+            if (textToTranslate == "" && start != before) {
+                this@TranslatorFragment.toggleEditMode(null)
             }
+
+            // Update the value of textToTranslate so the ViewModel can do live translation for us
             viewModel.textToTranslate.apply {
                 value = textToTranslate
             }
@@ -57,6 +66,11 @@ class TranslatorFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        // Notify the fragment that we have a custom menu
+        // This makes it call onCreateOptionsMenu
+        setHasOptionsMenu(true)
+
+        // Initialize the view model
         this.initViewModel()
 
         // Inflate the layout for this fragment
@@ -64,17 +78,31 @@ class TranslatorFragment : Fragment() {
 
     }
 
+    /**
+     *
+     *
+     */
     private fun toggleEditMode(translation: Translation?){
         val a = activity as AppCompatActivity
 
         if (translation!= null) {
             a.supportActionBar?.setTitle(R.string.edit_translation)
+            (activity as MainActivity).menuCross.isVisible = true
             toggleTextWatcher(true)
             etTextToTranslate.setText(translation.originalText)
             toggleTextWatcher(false)
             btnSaveChanges.visibility = View.VISIBLE
         } else {
             a.supportActionBar?.setTitle(R.string.app_name)
+            etTextToTranslate.hint = getString(R.string.press_to_enter)
+            toggleTextWatcher(true)
+            etTextToTranslate.text.clear()
+            viewModel.textToTranslate.apply {
+                value = ""
+            }
+            toggleTranslationResultVisibility(false)
+            toggleTextWatcher(false)
+            (activity as MainActivity).menuCross.isVisible = false
             btnSaveChanges.visibility = View.GONE
         }
 
@@ -85,6 +113,9 @@ class TranslatorFragment : Fragment() {
         this@TranslatorFragment.viewModel.createOrUpdateTranslation()
         etTextToTranslate.hint = etTextToTranslate.text
         etTextToTranslate.text.clear()
+        viewModel.textToTranslate.apply {
+            value = ""
+        }
         this.toggleTextWatcher()
     }
 
@@ -96,6 +127,7 @@ class TranslatorFragment : Fragment() {
             { translation ->
                 scrollView.smoothScrollTo(0, 0)
                 viewModel.selectTranslation(translation)
+                (activity as MainActivity).menuCross.isVisible = true
             },
             { translation -> viewModel.favoriteTranslation(translation) }
         )
@@ -138,7 +170,7 @@ class TranslatorFragment : Fragment() {
         btnFromLanguage.setOnClickListener {
             val action = TranslatorFragmentDirections
                 .actionTranslatorFragmentToLanguageSelectActivity(
-                    viewModel.fromLanguage.value!!,
+                    viewModel.fromLanguage.value,
                     true
                 )
             findNavController().navigate(action)
@@ -147,7 +179,7 @@ class TranslatorFragment : Fragment() {
         btnToLanguage.setOnClickListener {
             val action = TranslatorFragmentDirections
                 .actionTranslatorFragmentToLanguageSelectActivity(
-                    viewModel.toLanguage.value!!,
+                    viewModel.toLanguage.value,
                     false
                 )
             findNavController().navigate(action)
@@ -157,6 +189,19 @@ class TranslatorFragment : Fragment() {
     fun initViewModel() {
         viewModel = ViewModelProviders.of(activity as AppCompatActivity)
             .get(TranslatorViewModel::class.java)
+
+        viewModel.loading.observe(this, Observer { loading ->
+            if (loading) {
+                Handler().postDelayed({
+                    if (this@TranslatorFragment.viewModel.loading.value == true) {
+                        pbLoading.visibility = View.VISIBLE
+                    }
+                }, 1000)
+            }
+            else {
+                pbLoading.visibility = View.GONE
+            }
+        })
 
         viewModel.fromLanguage.observe(this, Observer { fromLanguage ->
             if (fromLanguage != null) {
@@ -276,5 +321,21 @@ class TranslatorFragment : Fragment() {
             }
         }
         return ItemTouchHelper(callback)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+
+        menu.clear()
+
+        inflater.inflate(R.menu.menu_close, menu)
+        val cross = menu.findItem(R.id.action_deselect) ?: (activity as MainActivity).menuCross
+        (activity as MainActivity).menuCross = cross
+        cross.isVisible = viewModel.selectedTranslation.value != null
+
+        cross?.setOnMenuItemClickListener {
+            this@TranslatorFragment.viewModel.selectedTranslation.apply { value = null }
+            return@setOnMenuItemClickListener true
+        }
     }
 }

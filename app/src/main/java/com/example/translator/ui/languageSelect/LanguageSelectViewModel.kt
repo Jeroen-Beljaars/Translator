@@ -32,5 +32,4 @@ class LanguageSelectViewModel(application: Application) : AndroidViewModel(appli
             }
         }
     }
-
 }

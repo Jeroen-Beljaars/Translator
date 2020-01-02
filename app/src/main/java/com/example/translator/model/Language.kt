@@ -31,6 +31,18 @@ data class Language(
         fun getSupportedLanguages(): List<Language> {
             return listOf(
                 Language(
+                    FirebaseTranslateLanguage.NL,
+                    "Dutch",
+                    "nl",
+                    true
+                ),
+                Language(
+                    FirebaseTranslateLanguage.EN,
+                    "English",
+                    "en",
+                    selectedAsToLanguage = true
+                ),
+                Language(
                     FirebaseTranslateLanguage.AF,
                     "Afrikaans",
                     "af"
@@ -84,12 +96,6 @@ data class Language(
                     FirebaseTranslateLanguage.EL,
                     "Greek",
                     "el"
-                ),
-                Language(
-                    FirebaseTranslateLanguage.EN,
-                    "English",
-                    "en",
-                    selectedAsToLanguage = true
                 ),
                 Language(
                     FirebaseTranslateLanguage.EO,
@@ -225,12 +231,6 @@ data class Language(
                     FirebaseTranslateLanguage.MT,
                     "Maltese",
                     "mt"
-                ),
-                Language(
-                    FirebaseTranslateLanguage.NL,
-                    "Dutch",
-                    "nl",
-                    true
                 ),
                 Language(
                     FirebaseTranslateLanguage.NO,
