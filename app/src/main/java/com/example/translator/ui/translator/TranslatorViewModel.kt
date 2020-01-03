@@ -114,22 +114,27 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
             )
 
         fromLanguage.addSource(selectedFromLanguage) { fromLanguage ->
-            this@TranslatorViewModel.fromLanguage.apply {
-                value = fromLanguage
-            }
-            val selectedToLanguage =
-                if (toLanguageId == null) this.getSelectedToLanguage() else this.languageRepository.getLanguageById(
-                    toLanguageId
-                )
-            toLanguage.addSource(selectedToLanguage) { toLanguage ->
-                this@TranslatorViewModel.toLanguage.apply {
-                    value = toLanguage
+            if (fromLanguage == null) {
+                // couldn't fetch the fromLanguage. Try it again..
+                this@TranslatorViewModel.fromLanguage.removeSource(selectedFromLanguage)
+                this@TranslatorViewModel.getSelectedLanguages()
+            } else {
+                this@TranslatorViewModel.fromLanguage.apply {
+                    value = fromLanguage
                 }
-                this@TranslatorViewModel.toggleLiveTranslation(true)
-                this@TranslatorViewModel.toLanguage.removeSource(selectedToLanguage)
+                val selectedToLanguage =
+                    if (toLanguageId == null) this.getSelectedToLanguage() else this.languageRepository.getLanguageById(
+                        toLanguageId
+                    )
+                toLanguage.addSource(selectedToLanguage) { toLanguage ->
+                    this@TranslatorViewModel.toLanguage.apply {
+                        value = toLanguage
+                    }
+                    this@TranslatorViewModel.toggleLiveTranslation(true)
+                    this@TranslatorViewModel.toLanguage.removeSource(selectedToLanguage)
+                }
+                this@TranslatorViewModel.fromLanguage.removeSource(selectedFromLanguage)
             }
-            this@TranslatorViewModel.fromLanguage.removeSource(selectedFromLanguage)
-
         }
     }
 

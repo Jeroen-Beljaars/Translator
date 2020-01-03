@@ -52,7 +52,8 @@ class TranslatorFragment : Fragment() {
 
             // Check if live translation has been disabled. If it has then enable it again
             // since the user is trying to perform a new translation or edit an existing one
-            if (viewModel.liveTranslation) {
+            if (!viewModel.liveTranslation) {
+                ivSave.visibility = View.VISIBLE
                 viewModel.toggleLiveTranslation(true)
             }
 
@@ -127,7 +128,7 @@ class TranslatorFragment : Fragment() {
         etTextToTranslate.imeOptions = EditorInfo.IME_ACTION_DONE
         etTextToTranslate.setRawInputType(InputType.TYPE_CLASS_TEXT)
 
-        this.toggleTextWatcher()
+        this.toggleTextWatcher(true)
 
         etTextToTranslate.setOnEditorActionListener { _, action, _ ->
             if (action == EditorInfo.IME_ACTION_DONE) {
@@ -237,21 +238,21 @@ class TranslatorFragment : Fragment() {
             if (translation != null) {
                 a.supportActionBar?.setTitle(R.string.edit_translation)
                 (activity as MainActivity).menuCross.isVisible = true
-                toggleTextWatcher(true)
-                etTextToTranslate.setText(translation.originalText)
                 toggleTextWatcher(false)
+                etTextToTranslate.setText(translation.originalText)
+                toggleTextWatcher(true)
                 btnSaveChanges.visibility = View.VISIBLE
             } else {
                 // Disable edit mode
                 a.supportActionBar?.setTitle(R.string.app_name)
                 etTextToTranslate.hint = getString(R.string.press_to_enter)
-                toggleTextWatcher(true)
+                toggleTextWatcher(false)
                 etTextToTranslate.text.clear()
                 viewModel.textToTranslate.apply {
                     value = ""
                 }
                 toggleTranslationResultVisibility(false)
-                toggleTextWatcher(false)
+                toggleTextWatcher(true)
                 (activity as MainActivity).menuCross.isVisible = false
                 btnSaveChanges.visibility = View.GONE
             }
@@ -262,20 +263,21 @@ class TranslatorFragment : Fragment() {
         }
     }
 
-    fun saveTranslation(){
-        this.toggleTextWatcher(true)
+    private fun saveTranslation(){
+        this.toggleTextWatcher(false)
 
         // Disable live translation so we can keep showing the result
         // until the user translates something else. ( will be enabled again once text is being
         // entered in etTextToTranslate)
         this@TranslatorFragment.viewModel.toggleLiveTranslation(false)
+        ivSave.visibility = View.GONE
         this@TranslatorFragment.viewModel.createOrUpdateTranslation()
         etTextToTranslate.hint = etTextToTranslate.text
         etTextToTranslate.text.clear()
         viewModel.textToTranslate.apply {
             value = ""
         }
-        this.toggleTextWatcher()
+        this.toggleTextWatcher(true)
     }
 
     private fun toggleTranslationResultVisibility(visible: Boolean) {
@@ -284,11 +286,11 @@ class TranslatorFragment : Fragment() {
         tvTranslatedText.visibility = visibility
     }
 
-    fun toggleTextWatcher(remove: Boolean = false) {
-        if (remove){
-            etTextToTranslate.removeTextChangedListener(this.textWatcher)
-        } else {
+    fun toggleTextWatcher(enabled: Boolean = true) {
+        if (enabled){
             etTextToTranslate.addTextChangedListener(this.textWatcher)
+        } else {
+            etTextToTranslate.removeTextChangedListener(this.textWatcher)
         }
     }
 
