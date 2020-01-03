@@ -50,6 +50,12 @@ class TranslatorFragment : Fragment() {
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
             val textToTranslate = s.toString()
 
+            // Check if live translation has been disabled. If it has then enable it again
+            // since the user is trying to perform a new translation or edit an existing one
+            if (viewModel.liveTranslation) {
+                viewModel.toggleLiveTranslation(true)
+            }
+
             // If the user removes all the text from the textToTranslate box disable edit mode
             if (textToTranslate == "" && start != before) {
                 this@TranslatorFragment.toggleEditMode(null)
@@ -78,49 +84,12 @@ class TranslatorFragment : Fragment() {
 
     }
 
-    /**
-     *
-     *
-     */
-    private fun toggleEditMode(translation: Translation?){
-        val a = activity as AppCompatActivity
-
-        if (translation!= null) {
-            a.supportActionBar?.setTitle(R.string.edit_translation)
-            (activity as MainActivity).menuCross.isVisible = true
-            toggleTextWatcher(true)
-            etTextToTranslate.setText(translation.originalText)
-            toggleTextWatcher(false)
-            btnSaveChanges.visibility = View.VISIBLE
-        } else {
-            a.supportActionBar?.setTitle(R.string.app_name)
-            etTextToTranslate.hint = getString(R.string.press_to_enter)
-            toggleTextWatcher(true)
-            etTextToTranslate.text.clear()
-            viewModel.textToTranslate.apply {
-                value = ""
-            }
-            toggleTranslationResultVisibility(false)
-            toggleTextWatcher(false)
-            (activity as MainActivity).menuCross.isVisible = false
-            btnSaveChanges.visibility = View.GONE
-        }
-
-    }
-
-    fun saveTranslation(){
-        this.toggleTextWatcher(true)
-        this@TranslatorFragment.viewModel.createOrUpdateTranslation()
-        etTextToTranslate.hint = etTextToTranslate.text
-        etTextToTranslate.text.clear()
-        viewModel.textToTranslate.apply {
-            value = ""
-        }
-        this.toggleTextWatcher()
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        viewModel.textToTranslate.value?.let {
+            etTextToTranslate.setText(it)
+        }
 
         this.translationAdapter = TranslationAdapter(
             translationHistory,
@@ -136,6 +105,7 @@ class TranslatorFragment : Fragment() {
             this.saveTranslation()
         }
 
+        // Initialize the translation history
         rvTranslationHistory.layoutManager = LinearLayoutManager(activity as AppCompatActivity, RecyclerView.VERTICAL, false)
         rvTranslationHistory.adapter = translationAdapter
         createItemTouchHelper().attachToRecyclerView(rvTranslationHistory)
@@ -183,6 +153,10 @@ class TranslatorFragment : Fragment() {
                     false
                 )
             findNavController().navigate(action)
+        }
+
+        ivSave.setOnClickListener {
+            this.saveTranslation()
         }
     }
 
@@ -244,6 +218,64 @@ class TranslatorFragment : Fragment() {
         })
 
 
+    }
+
+    /**
+     * Enable or disable edit mode for a specific translation
+     *
+     * @param translation The translation which we want to edit
+     *                    if it's null then edit mode will be disabled
+     */
+    private fun toggleEditMode(translation: Translation?){
+        // First check if the edit mode has already been enabled for this translation
+        // If it has then we know that the user likely tried to change the language if we
+        // Wouldn't check this then the user would not be able to change the languages
+        if (viewModel.editModeEnabledForTranslation != translation) {
+            // Enable edit mode for the specified translation
+            val a = activity as AppCompatActivity
+            viewModel.editModeEnabledForTranslation = translation
+            if (translation != null) {
+                a.supportActionBar?.setTitle(R.string.edit_translation)
+                (activity as MainActivity).menuCross.isVisible = true
+                toggleTextWatcher(true)
+                etTextToTranslate.setText(translation.originalText)
+                toggleTextWatcher(false)
+                btnSaveChanges.visibility = View.VISIBLE
+            } else {
+                // Disable edit mode
+                a.supportActionBar?.setTitle(R.string.app_name)
+                etTextToTranslate.hint = getString(R.string.press_to_enter)
+                toggleTextWatcher(true)
+                etTextToTranslate.text.clear()
+                viewModel.textToTranslate.apply {
+                    value = ""
+                }
+                toggleTranslationResultVisibility(false)
+                toggleTextWatcher(false)
+                (activity as MainActivity).menuCross.isVisible = false
+                btnSaveChanges.visibility = View.GONE
+            }
+        } else if(translation != null) {
+            // Edit mode has already been enabled and the user changed the language
+            // Show the save changes button again
+            btnSaveChanges.visibility = View.VISIBLE
+        }
+    }
+
+    fun saveTranslation(){
+        this.toggleTextWatcher(true)
+
+        // Disable live translation so we can keep showing the result
+        // until the user translates something else. ( will be enabled again once text is being
+        // entered in etTextToTranslate)
+        this@TranslatorFragment.viewModel.toggleLiveTranslation(false)
+        this@TranslatorFragment.viewModel.createOrUpdateTranslation()
+        etTextToTranslate.hint = etTextToTranslate.text
+        etTextToTranslate.text.clear()
+        viewModel.textToTranslate.apply {
+            value = ""
+        }
+        this.toggleTextWatcher()
     }
 
     private fun toggleTranslationResultVisibility(visible: Boolean) {

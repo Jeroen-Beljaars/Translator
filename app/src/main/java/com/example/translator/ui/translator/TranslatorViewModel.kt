@@ -36,6 +36,7 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     val translationHistory = MediatorLiveData<List<Translation>>()
 
     val selectedTranslation = MediatorLiveData<Translation>()
+    var editModeEnabledForTranslation: Translation? = null
 
     val loading = MutableLiveData<Boolean>()
 
@@ -127,7 +128,7 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
                 this@TranslatorViewModel.toggleLiveTranslation(true)
                 this@TranslatorViewModel.toLanguage.removeSource(selectedToLanguage)
             }
-            this@TranslatorViewModel.toLanguage.removeSource(selectedFromLanguage)
+            this@TranslatorViewModel.fromLanguage.removeSource(selectedFromLanguage)
 
         }
     }
