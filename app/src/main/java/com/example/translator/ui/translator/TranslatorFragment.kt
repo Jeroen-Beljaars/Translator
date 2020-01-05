@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.translator.R
+import com.example.translator.model.TranslateResponse
 import com.example.translator.model.Translation
 import com.example.translator.ui.MainActivity
 import com.google.android.material.snackbar.Snackbar
@@ -88,8 +89,12 @@ class TranslatorFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel.textToTranslate.value?.let {
-            etTextToTranslate.setText(it)
+        if(viewModel.textToTranslate.value != "") {
+            etTextToTranslate.setText(viewModel.textToTranslate.value)
+        } else {
+            viewModel.translatedText.apply {
+                value = TranslateResponse("", null)
+            }
         }
 
         this.translationAdapter = TranslationAdapter(

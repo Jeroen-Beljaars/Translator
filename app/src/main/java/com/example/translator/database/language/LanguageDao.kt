@@ -29,5 +29,5 @@ interface LanguageDao {
     suspend fun insertLanguage(language: Language)
 
     @Insert
-    suspend fun insertAll(languageList: List<Language>): List<Long>
+    suspend fun insertAll(languageList: List<Language>)
 }
